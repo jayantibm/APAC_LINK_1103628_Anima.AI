@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Search Engine</title>
+    <style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    padding: 0;
+    background-color: #f8f9fa;
+    text-align: center;
+}
+
+h1 {
+    font-size: 1.8rem;
+}
+
+textarea {
+    width: 100%;
+    max-width: 600px;
+    height: 100px;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: none;
+}
+
+button {
+    margin-top: 10px;
+    padding: 12px 20px;
+    font-size: 1rem;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+pre {
+    background: #a9b7d3;
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    text-align: left;
+    max-width: 100%;
+    white-space: pre-wrap; /* Ensure wrapping */
+    word-wrap: break-word;
+}
+
+.container {
+    max-width: 800px; 
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    align-items: flex-start;
+}
+/* Special styling for detected code */
+.code-block {
+    background: #282c34 !important; /* Dark background */
+    color: #ffffff !important; /* Light text */
+    font-family: "Courier New", monospace;
+    padding: 15px;
+    border-left: 4px solid #00d1b2; /* Highlight border */
+}
+#aiResponse {
+    text-align: left
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+    textarea {
+        height: 80px;
+    }
+    button {
+        width: 100%;
+    }
+    .container {
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    align-items: flex-start;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+    <h1>The Nexus Tactician</h1>
+    <p>Enter a query or code snippet:</p>
+    <textarea id="query" placeholder="Ask something..."></textarea>
+    <button onclick="searchAI()">Search</button>
+
+    <h2>Results:</h2>
+    <p><strong>Question:</strong></p>
+    <div><pre id="userQuery"></pre></div>
+    
+    <p><strong>Response:</strong></p>
+    <div id="aiResponse" > </div>
+    </div>
+    <script>
+        async function searchAI() {
+    const query = document.getElementById("query").value;
+    if (!query) return alert("Please enter a query!");
+
+    document.getElementById("userQuery").innerText = query;
+    document.getElementById("aiResponse").innerText = "Loading...";
+
+    try {
+        const response = await fetch('/api/search', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        let output = data.output || "No response received";
+
+        // Detect if output contains triple backticks (```), indicating code
+        const codeBlockMatch = output.match(/```([\s\S]*?)```/);
+
+        if (codeBlockMatch) {
+            // Extract code, remove backticks, and format for display
+            const codeContent = escapeHTML(codeBlockMatch[1].trim());
+
+            document.getElementById("aiResponse").innerHTML = `
+ 
+                <pre class="code-block"><code>${codeContent}</code></pre>
+            `;
+        } else {
+            // Regular text response
+            document.getElementById("aiResponse").innerText = output;
+        }
+
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        document.getElementById("aiResponse").innerText = "Failed to get response";
+    }
+}
+
+// Function to escape HTML (prevent XSS issues)
+function escapeHTML(str) {
+    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+    </script>
+
+</body>
+</html>
